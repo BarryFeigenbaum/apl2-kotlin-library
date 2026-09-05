@@ -40,7 +40,7 @@ class APLArray<T>(
 object APLRuntime {
     private val contextStack = ThreadLocal.withInitial { ArrayDeque<APLContext>() }
 
-    fun createContext(): APLContext = APLContext.DEFAULT
+    fun createContext(): APLContext = APLContext()
 
     fun createContext(context: APLContext): APLContext = context.copy()
 
@@ -99,7 +99,9 @@ object APLRuntime {
 
         return when {
             left is APLArray<*> && right is APLArray<*> -> {
-                left.size() == right.size() && (0 until left.size()).all { i ->
+                left.shape().contentEquals(right.shape()) &&
+                    left.size() == right.size() &&
+                    (0 until left.size()).all { i ->
                     valuesEqual(left.rawElement(i), right.rawElement(i))
                 }
             }

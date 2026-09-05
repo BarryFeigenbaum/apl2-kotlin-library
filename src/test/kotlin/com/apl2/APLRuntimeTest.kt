@@ -75,6 +75,12 @@ class APLRuntimeTest {
         assertTrue(APLRuntime.valuesEqual(1.0, 1.005))
         assertTrue(APLRuntime.valuesEqual(APLComplex(1.0, 2.0), APLComplex(1.005, 1.995)))
         assertTrue(APLRuntime.valuesEqual(APLArray(listOf(1.0, 2.0)), APLArray(listOf(1.005, 1.995))))
+        assertFalse(
+            APLRuntime.valuesEqual(
+                APLArray(listOf(1, 2, 3, 4), intArrayOf(4)),
+                APLArray(listOf(1, 2, 3, 4), intArrayOf(2, 2)),
+            ),
+        )
         assertFalse(APLRuntime.valuesEqual(1, 2))
         assertFalse(APLRuntime.valuesEqual(true, false))
     }
