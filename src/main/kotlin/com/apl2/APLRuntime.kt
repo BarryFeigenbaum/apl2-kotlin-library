@@ -113,6 +113,11 @@ object APLRuntime {
             left is APLComplex && right is APLComplex -> {
                 areClose(left.real, right.real) && areClose(left.imaginary, right.imaginary)
             }
+            isUnsignedNumber(left) && isUnsignedNumber(right) -> {
+                unsignedToBigDecimal(left).compareTo(unsignedToBigDecimal(right)) == 0
+            }
+            left is Number && isUnsignedNumber(right) -> mixedSignedUnsignedEqual(left, right)
+            isUnsignedNumber(left) && right is Number -> mixedSignedUnsignedEqual(right, left)
             left is Number && right is Number -> numbersEqual(left, right)
             else -> left == right
         }
@@ -127,6 +132,10 @@ object APLRuntime {
         return when (value) {
             null -> "null"
             is APLComplex -> formatComplex(value)
+            is UByte -> formatUnsigned(value)
+            is UShort -> formatUnsigned(value)
+            is UInt -> formatUnsigned(value)
+            is ULong -> formatUnsigned(value)
             is Number -> formatScalarNumber(value)
             else -> applyWidth(value.toString())
         }
@@ -141,6 +150,28 @@ object APLRuntime {
             areClose(left.toDouble(), right.toDouble())
         }
     }
+
+    private fun mixedSignedUnsignedEqual(signed: Number, unsigned: Any): Boolean {
+        val signedIntegral = signed is Byte || signed is Short || signed is Int || signed is Long
+        if (signedIntegral) {
+            return BigDecimal.valueOf(signed.toLong()).compareTo(unsignedToBigDecimal(unsigned)) == 0
+        }
+        return areClose(signed.toDouble(), unsignedToBigDecimal(unsigned).toDouble())
+    }
+
+    private fun isUnsignedNumber(value: Any): Boolean =
+        value is UByte || value is UShort || value is UInt || value is ULong
+
+    private fun unsignedToBigDecimal(value: Any): BigDecimal =
+        when (value) {
+            is UByte -> BigDecimal(value.toString())
+            is UShort -> BigDecimal(value.toString())
+            is UInt -> BigDecimal(value.toString())
+            is ULong -> BigDecimal(value.toString())
+            else -> throw IllegalArgumentException("Unsupported unsigned number type: ${value::class}")
+        }
+
+    private fun formatUnsigned(unsigned: Any): String = applyWidth(unsignedToBigDecimal(unsigned).toPlainString())
 
     private fun formatComplex(complex: APLComplex): String {
         if (abs(complex.imaginary) <= currentContext().comparisonTolerance) {
@@ -158,7 +189,11 @@ object APLRuntime {
     private fun formatNumber(number: Number): String {
         val asDouble = number.toDouble()
         if (!asDouble.isFinite()) {
-            return number.toString()
+            return when {
+                asDouble.isNaN() -> "NaN"
+                asDouble > 0 -> "Infinity"
+                else -> "-Infinity"
+            }
         }
 
         val value = when (number) {

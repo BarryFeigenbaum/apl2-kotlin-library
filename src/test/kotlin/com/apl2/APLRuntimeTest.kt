@@ -66,6 +66,7 @@ class APLRuntimeTest {
         assertEquals("  2.35", APLRuntime.format(APLComplex(2.345, 0.0001)))
         assertEquals("123.46", APLRuntime.format(123.456))
         assertEquals("[     1,   2.35]", APLRuntime.format(APLArray(listOf(1, 2.345))))
+        assertEquals("    42", APLRuntime.format(42u))
         assertEquals("   NaN", APLRuntime.format(Double.NaN))
         assertEquals("Infinity", APLRuntime.format(Double.POSITIVE_INFINITY))
     }
@@ -85,6 +86,9 @@ class APLRuntimeTest {
                 APLArray(listOf(1, 2, 3, 4), intArrayOf(2, 2)),
             ),
         )
+        assertTrue(APLRuntime.valuesEqual(1u, 1uL))
+        assertTrue(APLRuntime.valuesEqual(1, 1u))
+        assertFalse(APLRuntime.valuesEqual(1u, 2u))
         assertFalse(APLRuntime.valuesEqual(1, 2))
         assertFalse(APLRuntime.valuesEqual(true, false))
     }
