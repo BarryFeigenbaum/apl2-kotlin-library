@@ -120,8 +120,12 @@ object APLRuntime {
             isUnsignedNumber(left) && isUnsignedNumber(right) -> {
                 unsignedToBigDecimal(left).compareTo(unsignedToBigDecimal(right)) == 0
             }
-            left is Number && isUnsignedNumber(right) -> mixedSignedUnsignedEqual(left, right)
-            isUnsignedNumber(left) && right is Number -> mixedSignedUnsignedEqual(right, left)
+            left is Number && !isUnsignedNumber(left) && isUnsignedNumber(right) -> {
+                if (isSignedIntegralNumber(left)) mixedSignedUnsignedEqual(left, right) else false
+            }
+            isUnsignedNumber(left) && right is Number && !isUnsignedNumber(right) -> {
+                if (isSignedIntegralNumber(right)) mixedSignedUnsignedEqual(right, left) else false
+            }
             left is Number && right is Number -> numbersEqual(left, right)
             else -> left == right
         }
@@ -146,8 +150,8 @@ object APLRuntime {
     }
 
     private fun numbersEqual(left: Number, right: Number): Boolean {
-        val leftIntegral = left is Byte || left is Short || left is Int || left is Long
-        val rightIntegral = right is Byte || right is Short || right is Int || right is Long
+        val leftIntegral = isSignedIntegralNumber(left)
+        val rightIntegral = isSignedIntegralNumber(right)
         return if (leftIntegral && rightIntegral) {
             left.toLong() == right.toLong()
         } else {
@@ -156,7 +160,7 @@ object APLRuntime {
     }
 
     private fun mixedSignedUnsignedEqual(signed: Number, unsigned: Any): Boolean {
-        val signedIntegral = signed is Byte || signed is Short || signed is Int || signed is Long
+        val signedIntegral = isSignedIntegralNumber(signed)
         if (signedIntegral) {
             if (signed.toLong() < 0L) {
                 return false
@@ -168,6 +172,9 @@ object APLRuntime {
 
     private fun isUnsignedNumber(value: Any): Boolean =
         value is UByte || value is UShort || value is UInt || value is ULong
+
+    private fun isSignedIntegralNumber(value: Number): Boolean =
+        value is Byte || value is Short || value is Int || value is Long
 
     private fun unsignedToBigDecimal(value: Any): BigDecimal =
         when (value) {

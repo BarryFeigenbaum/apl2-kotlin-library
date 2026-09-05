@@ -89,6 +89,7 @@ class APLRuntimeTest {
         )
         assertTrue(APLRuntime.valuesEqual(1u, 1uL))
         assertTrue(APLRuntime.valuesEqual(1, 1u))
+        assertFalse(APLRuntime.valuesEqual(1.0001, 1u))
         assertFalse(APLRuntime.valuesEqual(1u, 2u))
         assertFalse(APLRuntime.valuesEqual(-1, 1u))
         assertTrue(APLRuntime.valuesEqual(Double.NaN, Double.NaN))
