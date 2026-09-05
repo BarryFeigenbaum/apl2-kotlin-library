@@ -62,7 +62,7 @@ class APLRuntimeTest {
         APLRuntime.pushContext(APLContext(printPrecision = 2, printWidth = 6, comparisonTolerance = 0.01))
 
         assertEquals("  3.14", APLRuntime.format(3.14159))
-        assertEquals("2.35-6.79i", APLRuntime.format(APLComplex(2.345, -6.789)))
+        assertEquals("  2.35-  6.79i", APLRuntime.format(APLComplex(2.345, -6.789)))
         assertEquals("  2.35", APLRuntime.format(APLComplex(2.345, 0.0001)))
         assertEquals("123.46", APLRuntime.format(123.456))
         assertEquals("[     1,   2.35]", APLRuntime.format(APLArray(listOf(1, 2.345))))

@@ -13,7 +13,7 @@ class APLArray<T>(
     init {
         require(shape.isNotEmpty()) { "Shape must not be empty" }
         require(shape.all { it >= 0 }) { "Shape dimensions must be non-negative" }
-        require(shape.fold(1) { product, dim -> product * dim } == elements.size) {
+        require(shape.fold(1L) { product, dim -> product * dim } == elements.size.toLong()) {
             "Shape does not match element count"
         }
     }
@@ -124,13 +124,12 @@ object APLRuntime {
             return "[$values]"
         }
 
-        val formatted = when (value) {
+        return when (value) {
             null -> "null"
             is APLComplex -> formatComplex(value)
-            is Number -> formatNumber(value)
-            else -> value.toString()
+            is Number -> formatScalarNumber(value)
+            else -> applyWidth(value.toString())
         }
-        return applyWidth(formatted)
     }
 
     private fun numbersEqual(left: Number, right: Number): Boolean {
@@ -145,14 +144,16 @@ object APLRuntime {
 
     private fun formatComplex(complex: APLComplex): String {
         if (abs(complex.imaginary) <= currentContext().comparisonTolerance) {
-            return formatNumber(complex.real)
+            return formatScalarNumber(complex.real)
         }
 
-        val real = formatNumber(complex.real)
-        val imaginary = formatNumber(abs(complex.imaginary))
+        val real = formatScalarNumber(complex.real)
+        val imaginary = formatScalarNumber(abs(complex.imaginary))
         val sign = if (complex.imaginary >= 0.0) "+" else "-"
         return "$real$sign${imaginary}i"
     }
+
+    private fun formatScalarNumber(number: Number): String = applyWidth(formatNumber(number))
 
     private fun formatNumber(number: Number): String {
         if (number is Double && !number.isFinite()) {
