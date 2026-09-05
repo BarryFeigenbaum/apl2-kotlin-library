@@ -1,0 +1,175 @@
+package com.apl2
+
+import java.math.BigDecimal
+import java.math.RoundingMode
+import kotlin.math.abs
+
+data class APLComplex(val real: Double, val imaginary: Double)
+
+class APLArray<T>(
+    private val elements: List<T>,
+    private val shape: IntArray = intArrayOf(elements.size),
+) {
+    init {
+        require(shape.isNotEmpty()) { "Shape must not be empty" }
+        require(shape.all { it >= 0 }) { "Shape dimensions must be non-negative" }
+        require(shape.fold(1) { product, dim -> product * dim } == elements.size) {
+            "Shape does not match element count"
+        }
+    }
+
+    fun size(): Int = elements.size
+
+    fun shape(): IntArray = shape.clone()
+
+    fun rawElement(index: Int): T = elements[index]
+
+    fun getElement(index: Int): T = elements[APLRuntime.toZeroBasedIndex(index, elements.size)]
+
+    fun getElement(vararg indices: Int): T {
+        require(indices.size == shape.size) { "Expected ${shape.size} indices but got ${indices.size}" }
+        val zeroBased = APLRuntime.toZeroBasedIndices(indices, shape)
+        var linearIndex = 0
+        for (i in zeroBased.indices) {
+            linearIndex = linearIndex * shape[i] + zeroBased[i]
+        }
+        return elements[linearIndex]
+    }
+}
+
+object APLRuntime {
+    private val contextStack = ThreadLocal.withInitial { ArrayDeque<APLContext>() }
+
+    fun createContext(): APLContext = APLContext.DEFAULT
+
+    fun createContext(context: APLContext): APLContext = context.copy()
+
+    fun destroyContext() {
+        contextStack.remove()
+    }
+
+    fun pushContext(context: APLContext): APLContext {
+        contextStack.get().addFirst(context)
+        return context
+    }
+
+    fun popContext(): APLContext {
+        val stack = contextStack.get()
+        if (stack.isEmpty()) {
+            throw IllegalStateException("No runtime context is currently active")
+        }
+        val popped = stack.removeFirst()
+        if (stack.isEmpty()) {
+            contextStack.remove()
+        }
+        return popped
+    }
+
+    fun currentContext(): APLContext = contextStack.get().firstOrNull() ?: APLContext.DEFAULT
+
+    fun toZeroBasedIndex(index: Int, size: Int): Int {
+        val zeroBasedIndex = index - currentContext().indexOrigin
+        if (zeroBasedIndex !in 0 until size) {
+            throw IndexOutOfBoundsException("Index: $index, Size: $size")
+        }
+        return zeroBasedIndex
+    }
+
+    fun toZeroBasedIndices(indices: IntArray, shape: IntArray): IntArray {
+        require(indices.size == shape.size) { "Index rank ${indices.size} does not match shape rank ${shape.size}" }
+
+        val indexOrigin = currentContext().indexOrigin
+        return IntArray(indices.size) { i ->
+            val zeroBased = indices[i] - indexOrigin
+            if (zeroBased !in 0 until shape[i]) {
+                throw IndexOutOfBoundsException("Index ${indices.contentToString()} out of bounds for shape ${shape.contentToString()}")
+            }
+            zeroBased
+        }
+    }
+
+    fun toOriginIndex(zeroBasedIndex: Long): Long = zeroBasedIndex + currentContext().indexOrigin
+
+    fun areClose(left: Double, right: Double): Boolean =
+        abs(left - right) <= currentContext().comparisonTolerance
+
+    fun valuesEqual(left: Any?, right: Any?): Boolean {
+        if (left === right) return true
+        if (left == null || right == null) return false
+
+        return when {
+            left is APLArray<*> && right is APLArray<*> -> {
+                left.size() == right.size() && (0 until left.size()).all { i ->
+                    valuesEqual(left.rawElement(i), right.rawElement(i))
+                }
+            }
+            left is APLComplex && right is APLComplex -> {
+                areClose(left.real, right.real) && areClose(left.imaginary, right.imaginary)
+            }
+            left is Number && right is Number -> numbersEqual(left, right)
+            else -> left == right
+        }
+    }
+
+    fun format(value: Any?): String {
+        val formatted = when (value) {
+            null -> "null"
+            is APLArray<*> -> {
+                val values = (0 until value.size()).joinToString(", ") { i -> format(value.rawElement(i)) }
+                "[$values]"
+            }
+            is APLComplex -> formatComplex(value)
+            is Number -> formatNumber(value)
+            else -> value.toString()
+        }
+        return applyWidth(formatted)
+    }
+
+    private fun numbersEqual(left: Number, right: Number): Boolean {
+        val leftIntegral = left is Byte || left is Short || left is Int || left is Long
+        val rightIntegral = right is Byte || right is Short || right is Int || right is Long
+        return if (leftIntegral && rightIntegral) {
+            left.toLong() == right.toLong()
+        } else {
+            areClose(left.toDouble(), right.toDouble())
+        }
+    }
+
+    private fun formatComplex(complex: APLComplex): String {
+        if (abs(complex.imaginary) <= currentContext().comparisonTolerance) {
+            return formatNumber(complex.real)
+        }
+
+        val real = formatNumber(complex.real)
+        val imaginary = formatNumber(abs(complex.imaginary))
+        val sign = if (complex.imaginary >= 0.0) "+" else "-"
+        return "$real$sign${imaginary}i"
+    }
+
+    private fun formatNumber(number: Number): String {
+        val value = when (number) {
+            is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
+            is Float, is Double -> BigDecimal.valueOf(number.toDouble())
+            else -> BigDecimal(number.toString())
+        }
+
+        var formatted = value
+        val precision = currentContext().printPrecision
+        if (precision >= 0) {
+            formatted = formatted.setScale(precision, RoundingMode.HALF_UP)
+        }
+        formatted = formatted.stripTrailingZeros()
+        if (formatted.scale() < 0) {
+            formatted = formatted.setScale(0, RoundingMode.UNNECESSARY)
+        }
+        return formatted.toPlainString()
+    }
+
+    private fun applyWidth(value: String): String {
+        val width = currentContext().printWidth
+        if (width <= value.length) {
+            return value
+        }
+        return value.padStart(width)
+    }
+}
