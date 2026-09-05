@@ -147,25 +147,23 @@ object APLRuntime {
             return formatScalarNumber(complex.real)
         }
 
-        val real = formatScalarNumber(complex.real)
-        val imaginary = formatScalarNumber(abs(complex.imaginary))
+        val real = formatNumber(complex.real)
+        val imaginary = formatNumber(abs(complex.imaginary))
         val sign = if (complex.imaginary >= 0.0) "+" else "-"
-        return "$real$sign${imaginary}i"
+        return applyWidth("$real$sign${imaginary}i")
     }
 
     private fun formatScalarNumber(number: Number): String = applyWidth(formatNumber(number))
 
     private fun formatNumber(number: Number): String {
-        if (number is Double && !number.isFinite()) {
-            return number.toString()
-        }
-        if (number is Float && !number.isFinite()) {
+        val asDouble = number.toDouble()
+        if (!asDouble.isFinite()) {
             return number.toString()
         }
 
         val value = when (number) {
             is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
-            is Float, is Double -> BigDecimal.valueOf(number.toDouble())
+            is Float, is Double -> BigDecimal.valueOf(asDouble)
             else -> BigDecimal(number.toString())
         }
 
