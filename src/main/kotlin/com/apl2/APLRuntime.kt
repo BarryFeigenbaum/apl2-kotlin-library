@@ -114,12 +114,13 @@ object APLRuntime {
     }
 
     fun format(value: Any?): String {
+        if (value is APLArray<*>) {
+            val values = (0 until value.size()).joinToString(", ") { i -> format(value.rawElement(i)) }
+            return "[$values]"
+        }
+
         val formatted = when (value) {
             null -> "null"
-            is APLArray<*> -> {
-                val values = (0 until value.size()).joinToString(", ") { i -> format(value.rawElement(i)) }
-                "[$values]"
-            }
             is APLComplex -> formatComplex(value)
             is Number -> formatNumber(value)
             else -> value.toString()
@@ -138,7 +139,7 @@ object APLRuntime {
     }
 
     private fun formatComplex(complex: APLComplex): String {
-        if (abs(complex.imaginary) <= currentContext().comparisonTolerance) {
+        if (complex.imaginary == 0.0) {
             return formatNumber(complex.real)
         }
 
