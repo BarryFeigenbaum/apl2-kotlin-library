@@ -74,6 +74,8 @@ class APLRuntimeTest {
         assertEquals("   NaN", APLRuntime.format(Double.NaN))
         assertEquals("Infinity", APLRuntime.format(Double.POSITIVE_INFINITY))
         assertEquals("-Infinity", APLRuntime.format(Double.NEGATIVE_INFINITY))
+        assertEquals("1000000000000000000000000000000000000000", APLRuntime.format(BigInteger("1000000000000000000000000000000000000000")))
+        assertEquals("123456789.99", APLRuntime.format(BigDecimal("123456789.987")))
     }
 
     @Test

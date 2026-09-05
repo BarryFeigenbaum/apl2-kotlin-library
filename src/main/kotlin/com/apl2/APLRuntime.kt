@@ -166,7 +166,7 @@ object APLRuntime {
         } else {
             val leftDecimal = toBigDecimal(left)
             val rightDecimal = toBigDecimal(right)
-            val tolerance = BigDecimal.valueOf(currentContext().comparisonTolerance)
+            val tolerance = BigDecimal(currentContext().comparisonTolerance.toString())
             leftDecimal.subtract(rightDecimal).abs() <= tolerance
         }
     }
@@ -214,19 +214,24 @@ object APLRuntime {
     private fun formatScalarNumber(number: Number): String = applyWidth(formatNumber(number))
 
     private fun formatNumber(number: Number): String {
-        val asDouble = number.toDouble()
-        if (!asDouble.isFinite()) {
-            return when {
-                asDouble.isNaN() -> "NaN"
-                asDouble > 0 -> "Infinity"
-                else -> "-Infinity"
-            }
-        }
-
         val value = when (number) {
+            is BigInteger -> BigDecimal(number)
+            is BigDecimal -> number
             is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
-            is Float, is Double -> BigDecimal(number.toString())
-            else -> BigDecimal(number.toString())
+            is Float, is Double -> {
+                val asDouble = number.toDouble()
+                if (!asDouble.isFinite()) {
+                    return canonicalNonFinite(asDouble)
+                }
+                BigDecimal(number.toString())
+            }
+            else -> {
+                val asDouble = number.toDouble()
+                if (!asDouble.isFinite()) {
+                    return canonicalNonFinite(asDouble)
+                }
+                BigDecimal(number.toString())
+            }
         }
 
         var formatted = value
@@ -245,6 +250,7 @@ object APLRuntime {
         when (number) {
             is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
             is BigInteger -> BigDecimal(number)
+            is BigDecimal -> number
             is Float, is Double -> BigDecimal(number.toString())
             else -> BigDecimal(number.toString())
         }
@@ -254,6 +260,13 @@ object APLRuntime {
             is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
             is BigInteger -> BigDecimal(number)
             else -> throw IllegalArgumentException("Not an integral number type: ${number::class}")
+        }
+
+    private fun canonicalNonFinite(value: Double): String =
+        when {
+            value.isNaN() -> "NaN"
+            value > 0 -> "Infinity"
+            else -> "-Infinity"
         }
 
     private fun applyWidth(value: String): String {
