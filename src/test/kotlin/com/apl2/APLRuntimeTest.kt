@@ -54,6 +54,7 @@ class APLRuntimeTest {
 
         val matrix = APLArray(listOf(1, 2, 3, 4), intArrayOf(2, 2))
         assertEquals(2, matrix.getElement(1, 2))
+        assertTrue(APLRuntime.toOriginIndices(intArrayOf(0, 1)).contentEquals(intArrayOf(1, 2)))
     }
 
     @Test
@@ -65,6 +66,8 @@ class APLRuntimeTest {
         assertEquals("  2.35", APLRuntime.format(APLComplex(2.345, 0.0001)))
         assertEquals("123.46", APLRuntime.format(123.456))
         assertEquals("[     1,   2.35]", APLRuntime.format(APLArray(listOf(1, 2.345))))
+        assertEquals("   NaN", APLRuntime.format(Double.NaN))
+        assertEquals("Infinity", APLRuntime.format(Double.POSITIVE_INFINITY))
     }
 
     @Test

@@ -90,6 +90,11 @@ object APLRuntime {
 
     fun toOriginIndex(zeroBasedIndex: Long): Long = zeroBasedIndex + currentContext().indexOrigin
 
+    fun toOriginIndices(zeroBasedIndices: IntArray): IntArray {
+        val indexOrigin = currentContext().indexOrigin
+        return IntArray(zeroBasedIndices.size) { i -> zeroBasedIndices[i] + indexOrigin }
+    }
+
     fun areClose(left: Double, right: Double): Boolean =
         abs(left - right) <= currentContext().comparisonTolerance
 
@@ -150,6 +155,13 @@ object APLRuntime {
     }
 
     private fun formatNumber(number: Number): String {
+        if (number is Double && !number.isFinite()) {
+            return number.toString()
+        }
+        if (number is Float && !number.isFinite()) {
+            return number.toString()
+        }
+
         val value = when (number) {
             is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
             is Float, is Double -> BigDecimal.valueOf(number.toDouble())
