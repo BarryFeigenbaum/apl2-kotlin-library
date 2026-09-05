@@ -1,5 +1,6 @@
 package com.apl2
 
+import java.math.BigDecimal
 import kotlin.concurrent.thread
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -51,6 +52,7 @@ class APLRuntimeTest {
         val vector = APLArray(listOf(10, 20, 30))
         assertEquals(10, vector.getElement(1))
         assertEquals(30, vector.getElement(3))
+        assertEquals(3, APLRuntime.toOriginIndex(2))
 
         val matrix = APLArray(listOf(1, 2, 3, 4), intArrayOf(2, 2))
         assertEquals(2, matrix.getElement(1, 2))
@@ -62,6 +64,7 @@ class APLRuntimeTest {
         APLRuntime.pushContext(APLContext(printPrecision = 2, printWidth = 6, comparisonTolerance = 0.01))
 
         assertEquals("  3.14", APLRuntime.format(3.14159))
+        assertEquals("  1.25", APLRuntime.format(1.25f))
         assertEquals("2.35-6.79i", APLRuntime.format(APLComplex(2.345, -6.789)))
         assertEquals("  2.35", APLRuntime.format(APLComplex(2.345, 0.0001)))
         assertEquals("123.46", APLRuntime.format(123.456))
@@ -93,6 +96,12 @@ class APLRuntimeTest {
         assertFalse(APLRuntime.valuesEqual(1u, 2u))
         assertFalse(APLRuntime.valuesEqual(-1, 1u))
         assertTrue(APLRuntime.valuesEqual(Double.NaN, Double.NaN))
+        assertFalse(
+            APLRuntime.valuesEqual(
+                BigDecimal("10000000000000000.1"),
+                BigDecimal("10000000000000000.2"),
+            ),
+        )
         assertFalse(APLRuntime.valuesEqual(1, 2))
         assertFalse(APLRuntime.valuesEqual(true, false))
     }

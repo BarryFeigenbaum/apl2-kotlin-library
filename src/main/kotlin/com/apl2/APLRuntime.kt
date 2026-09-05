@@ -90,6 +90,8 @@ object APLRuntime {
 
     fun toOriginIndex(zeroBasedIndex: Long): Long = zeroBasedIndex + currentContext().indexOrigin
 
+    fun toOriginIndex(zeroBasedIndex: Int): Int = zeroBasedIndex + currentContext().indexOrigin
+
     fun toOriginIndices(zeroBasedIndices: IntArray): IntArray {
         val indexOrigin = currentContext().indexOrigin
         return IntArray(zeroBasedIndices.size) { i -> zeroBasedIndices[i] + indexOrigin }
@@ -150,12 +152,21 @@ object APLRuntime {
     }
 
     private fun numbersEqual(left: Number, right: Number): Boolean {
+        val leftDouble = left.toDouble()
+        val rightDouble = right.toDouble()
+        if (!leftDouble.isFinite() || !rightDouble.isFinite()) {
+            return areClose(leftDouble, rightDouble)
+        }
+
         val leftIntegral = isSignedIntegralNumber(left)
         val rightIntegral = isSignedIntegralNumber(right)
         return if (leftIntegral && rightIntegral) {
             left.toLong() == right.toLong()
         } else {
-            areClose(left.toDouble(), right.toDouble())
+            val leftDecimal = toBigDecimal(left)
+            val rightDecimal = toBigDecimal(right)
+            val tolerance = BigDecimal.valueOf(currentContext().comparisonTolerance)
+            leftDecimal.subtract(rightDecimal).abs() <= tolerance
         }
     }
 
@@ -212,7 +223,7 @@ object APLRuntime {
 
         val value = when (number) {
             is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
-            is Float, is Double -> BigDecimal.valueOf(asDouble)
+            is Float, is Double -> BigDecimal(number.toString())
             else -> BigDecimal(number.toString())
         }
 
@@ -227,6 +238,13 @@ object APLRuntime {
         }
         return formatted.toPlainString()
     }
+
+    private fun toBigDecimal(number: Number): BigDecimal =
+        when (number) {
+            is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
+            is Float, is Double -> BigDecimal(number.toString())
+            else -> BigDecimal(number.toString())
+        }
 
     private fun applyWidth(value: String): String {
         val width = currentContext().printWidth
