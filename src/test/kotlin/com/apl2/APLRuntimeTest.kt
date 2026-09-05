@@ -69,6 +69,7 @@ class APLRuntimeTest {
         assertEquals("    42", APLRuntime.format(42u))
         assertEquals("   NaN", APLRuntime.format(Double.NaN))
         assertEquals("Infinity", APLRuntime.format(Double.POSITIVE_INFINITY))
+        assertEquals("-Infinity", APLRuntime.format(Double.NEGATIVE_INFINITY))
     }
 
     @Test
@@ -89,6 +90,8 @@ class APLRuntimeTest {
         assertTrue(APLRuntime.valuesEqual(1u, 1uL))
         assertTrue(APLRuntime.valuesEqual(1, 1u))
         assertFalse(APLRuntime.valuesEqual(1u, 2u))
+        assertFalse(APLRuntime.valuesEqual(-1, 1u))
+        assertTrue(APLRuntime.valuesEqual(Double.NaN, Double.NaN))
         assertFalse(APLRuntime.valuesEqual(1, 2))
         assertFalse(APLRuntime.valuesEqual(true, false))
     }

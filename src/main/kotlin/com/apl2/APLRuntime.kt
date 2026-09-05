@@ -96,7 +96,11 @@ object APLRuntime {
     }
 
     fun areClose(left: Double, right: Double): Boolean =
-        abs(left - right) <= currentContext().comparisonTolerance
+        when {
+            left.isNaN() || right.isNaN() -> left.isNaN() && right.isNaN()
+            left.isInfinite() || right.isInfinite() -> left == right
+            else -> abs(left - right) <= currentContext().comparisonTolerance
+        }
 
     fun valuesEqual(left: Any?, right: Any?): Boolean {
         if (left === right) return true
@@ -154,6 +158,9 @@ object APLRuntime {
     private fun mixedSignedUnsignedEqual(signed: Number, unsigned: Any): Boolean {
         val signedIntegral = signed is Byte || signed is Short || signed is Int || signed is Long
         if (signedIntegral) {
+            if (signed.toLong() < 0L) {
+                return false
+            }
             return BigDecimal.valueOf(signed.toLong()).compareTo(unsignedToBigDecimal(unsigned)) == 0
         }
         return areClose(signed.toDouble(), unsignedToBigDecimal(unsigned).toDouble())
