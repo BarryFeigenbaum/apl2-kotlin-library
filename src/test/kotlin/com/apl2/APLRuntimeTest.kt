@@ -1,6 +1,7 @@
 package com.apl2
 
 import java.math.BigDecimal
+import java.math.BigInteger
 import kotlin.concurrent.thread
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -92,10 +93,17 @@ class APLRuntimeTest {
         )
         assertTrue(APLRuntime.valuesEqual(1u, 1uL))
         assertTrue(APLRuntime.valuesEqual(1, 1u))
+        assertTrue(APLRuntime.valuesEqual(BigInteger("1"), 1u))
         assertFalse(APLRuntime.valuesEqual(1.0001, 1u))
         assertFalse(APLRuntime.valuesEqual(1u, 2u))
         assertFalse(APLRuntime.valuesEqual(-1, 1u))
         assertTrue(APLRuntime.valuesEqual(Double.NaN, Double.NaN))
+        assertFalse(
+            APLRuntime.valuesEqual(
+                BigInteger("1000000000000000000000000001"),
+                BigInteger("1000000000000000000000000002"),
+            ),
+        )
         assertFalse(
             APLRuntime.valuesEqual(
                 BigDecimal("10000000000000000.1"),

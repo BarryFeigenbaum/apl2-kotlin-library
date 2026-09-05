@@ -1,6 +1,7 @@
 package com.apl2
 
 import java.math.BigDecimal
+import java.math.BigInteger
 import java.math.RoundingMode
 import kotlin.math.abs
 
@@ -161,7 +162,7 @@ object APLRuntime {
         val leftIntegral = isSignedIntegralNumber(left)
         val rightIntegral = isSignedIntegralNumber(right)
         return if (leftIntegral && rightIntegral) {
-            left.toLong() == right.toLong()
+            integralToBigDecimal(left).compareTo(integralToBigDecimal(right)) == 0
         } else {
             val leftDecimal = toBigDecimal(left)
             val rightDecimal = toBigDecimal(right)
@@ -173,19 +174,20 @@ object APLRuntime {
     private fun mixedSignedUnsignedEqual(signed: Number, unsigned: Any): Boolean {
         val signedIntegral = isSignedIntegralNumber(signed)
         if (signedIntegral) {
-            if (signed.toLong() < 0L) {
+            val signedValue = integralToBigDecimal(signed)
+            if (signedValue.signum() < 0) {
                 return false
             }
-            return BigDecimal.valueOf(signed.toLong()).compareTo(unsignedToBigDecimal(unsigned)) == 0
+            return signedValue.compareTo(unsignedToBigDecimal(unsigned)) == 0
         }
-        return areClose(signed.toDouble(), unsignedToBigDecimal(unsigned).toDouble())
+        return false
     }
 
     private fun isUnsignedNumber(value: Any): Boolean =
         value is UByte || value is UShort || value is UInt || value is ULong
 
     private fun isSignedIntegralNumber(value: Number): Boolean =
-        value is Byte || value is Short || value is Int || value is Long
+        value is Byte || value is Short || value is Int || value is Long || value is BigInteger
 
     private fun unsignedToBigDecimal(value: Any): BigDecimal =
         when (value) {
@@ -242,8 +244,16 @@ object APLRuntime {
     private fun toBigDecimal(number: Number): BigDecimal =
         when (number) {
             is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
+            is BigInteger -> BigDecimal(number)
             is Float, is Double -> BigDecimal(number.toString())
             else -> BigDecimal(number.toString())
+        }
+
+    private fun integralToBigDecimal(number: Number): BigDecimal =
+        when (number) {
+            is Byte, is Short, is Int, is Long -> BigDecimal.valueOf(number.toLong())
+            is BigInteger -> BigDecimal(number)
+            else -> throw IllegalArgumentException("Not an integral number type: ${number::class}")
         }
 
     private fun applyWidth(value: String): String {
