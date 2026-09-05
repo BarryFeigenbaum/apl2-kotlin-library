@@ -139,7 +139,7 @@ object APLRuntime {
     }
 
     private fun formatComplex(complex: APLComplex): String {
-        if (complex.imaginary == 0.0) {
+        if (abs(complex.imaginary) <= currentContext().comparisonTolerance) {
             return formatNumber(complex.real)
         }
 
